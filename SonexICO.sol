@@ -84,12 +84,14 @@ contract SonexICO is owned, ERC223ReceivingContract {
     uint256 private _amountRaised;
     uint256 private _deadline;
     uint256 private _limit;
+    uint256 private _minimumInvestment;
     uint256 private _price;
-    uint256 private _shareBalance;
-    Token private _tokenShares;
+    uint256 private _coinBalance;
+    Token private _tokenCoins;
     
     mapping (address => uint256) private _balanceOf;
-    mapping (address => uint256) private _shareLimitOf;
+    mapping (address => uint256) private _coinLimitOf;
+    mapping (address => bool) private _supportsToken;
     
     bool _fundingGoalReached = false;
     bool _crowdsaleClosed = false;
@@ -98,12 +100,12 @@ contract SonexICO is owned, ERC223ReceivingContract {
     modifier availableShare( uint256 _value) {
         uint amount = _value.div(_price);
         require(!_crowdsaleClosed);
-        require(_shareBalance.sub(_value) > 0);
+        require(_coinBalance.sub(_value) > 0);
         _;
     }
     modifier withinLimit(address _addr, uint256 _value) {
         uint256 amount = _value.div(_price);
-        require(_shareLimitOf[_addr].add(amount) <= _limit);
+        require(_coinLimitOf[_addr].add(amount) <= _limit);
         _;
     }
     
@@ -116,36 +118,37 @@ contract SonexICO is owned, ERC223ReceivingContract {
      * @param ifSuccessfulSendTo - 
      * @param fundingGoalInEthers - 
      * @param durationInMinutes -
-     * @param etherCostOfEachShare - 
-     * @param addressShares - 
+     * @param etherCostOfEachCoin - 
+     * @param addressCoins - 
      * @param shareLimit - 
      */
     function SonexICO (
         address ifSuccessfulSendTo,
         uint256 fundingGoalInEthers,
         uint256 durationInMinutes,
-        uint256 etherCostOfEachShare,
-        address addressShares,
+        uint256 etherCostOfEachCoin,
+        address addressCoins,
         uint256 shareLimit
     ) onlyOwner public { //Not sure whether onlyOwner modifier is needed here. Do we want this to be public?
     
-        require(etherCostOfEachShare > 0);
+        require(etherCostOfEachCoin > 0);
         require(ifSuccessfulSendTo != address(0));
-        require(addressShares != address(0));
+        require(addressCoins != address(0));
         
         _association = ifSuccessfulSendTo;
         _fundingGoal = fundingGoalInEthers.mul(1 ether);
         _deadline = now.add(durationInMinutes.mul(1 minutes));//'now' does not refer to the current time, it is a Block.timestamp.
-        _price = etherCostOfEachShare.mul(1 ether);
+        _price = etherCostOfEachCoin.mul(1 ether);
         _limit = shareLimit;
-        _tokenShares = Token(addressShares);
+        _tokenCoins = Token(addressCoins);
+        _supportsToken[addressCoins] = true;
     }
     
     /**
      * @dev Getter function - returns the amount of shares left to be sold.
      */
-    function availableShares() public view returns (uint256) {
-        return _shareBalance;
+    function availableCoins() public view returns (uint256) {
+        return _coinBalance;
     }
     
     /**
@@ -170,11 +173,11 @@ contract SonexICO is owned, ERC223ReceivingContract {
     function buyFor(address _addr) availableShare(msg.value) withinLimit(_addr, msg.value) payable public {
         uint256 amount = msg.value.div(_price);
         _balanceOf[_addr] = _balanceOf[_addr].add(msg.value);
-        _shareLimitOf[_addr] = _shareLimitOf[_addr].add(amount);
-        _shareBalance = _shareBalance.sub(amount);
+        _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
+        _coinBalance = _coinBalance.sub(amount);
         _amountRaised = _amountRaised.add(msg.value);
         emit FundTransfer(_addr, msg.value, true);
-        _tokenShares.transfer(_addr, amount);
+        _tokenCoins.transfer(_addr, amount);
     }
     
     /**
@@ -185,9 +188,10 @@ contract SonexICO is owned, ERC223ReceivingContract {
      * @param _data - 
      */
     function tokenFallback(address _from, uint256 _value, bytes _data) onlyOwner external { //what to do with data
-        require(_from == owner);
-        _shareBalance = _shareBalance.add(_value);
+        if(_supportsToken[_from]) {
+        _coinBalance = _coinBalance.add(_value);
         _data; // Inefficiency!!!
+        }
     } 
     
     /**
