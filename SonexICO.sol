@@ -97,10 +97,10 @@ contract SonexICO is owned, ERC223ReceivingContract {
     bool _crowdsaleClosed = false;
     
     modifier afterDeadline() { if (now >= _deadline) _;}
-    modifier availableShare( uint256 _value) {
+    modifier availableCoin( uint256 _value) {
         uint amount = _value.div(_price);
         require(!_crowdsaleClosed);
-        require(_coinBalance.sub(_value) > 0);
+        require(_coinBalance.sub(amount) > 0);
         _;
     }
     modifier withinLimit(address _addr, uint256 _value) {
@@ -128,7 +128,7 @@ contract SonexICO is owned, ERC223ReceivingContract {
         uint256 durationInMinutes,
         uint256 etherCostOfEachCoin,
         address addressCoins,
-        uint256 shareLimit
+        uint256 coinLimit
     ) onlyOwner public { //Not sure whether onlyOwner modifier is needed here. Do we want this to be public?
     
         require(etherCostOfEachCoin > 0);
@@ -139,16 +139,23 @@ contract SonexICO is owned, ERC223ReceivingContract {
         _fundingGoal = fundingGoalInEthers.mul(1 ether);
         _deadline = now.add(durationInMinutes.mul(1 minutes));//'now' does not refer to the current time, it is a Block.timestamp.
         _price = etherCostOfEachCoin.mul(1 ether);
-        _limit = shareLimit;
+        _limit = coinLimit;
         _tokenCoins = Token(addressCoins);
         _supportsToken[addressCoins] = true;
     }
     
     /**
-     * @dev Getter function - returns the amount of shares left to be sold.
+     * @dev Getter function - returns the amount of coins left to be sold.
      */
     function availableCoins() public view returns (uint256) {
         return _coinBalance;
+    }
+    
+    /**
+     * @dev Getter function - returns the price of coins left to be sold.
+     */
+    function price() public view returns (uint256) {
+        return _price;
     }
     
     /**
@@ -170,14 +177,20 @@ contract SonexICO is owned, ERC223ReceivingContract {
      * 
      * @param _addr - 
      */
-    function buyFor(address _addr) availableShare(msg.value) withinLimit(_addr, msg.value) payable public {
+    function buyFor(address _addr) availableCoin(msg.value) withinLimit(_addr, msg.value) payable public {
         uint256 amount = msg.value.div(_price);
-        _balanceOf[_addr] = _balanceOf[_addr].add(msg.value);
-        _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
-        _coinBalance = _coinBalance.sub(amount);
-        _amountRaised = _amountRaised.add(msg.value);
-        emit FundTransfer(_addr, msg.value, true);
-        _tokenCoins.transfer(_addr, amount);
+        //if(now<=_deadline.sub(20 minutes)){//first week private ICO
+            
+        //}else if(now<=_deadline.sub(10 minutes)&&now>_deadline.sub(20 minutes)){//second week private ICO
+            
+        //}else{//public ICC
+            _balanceOf[_addr] = _balanceOf[_addr].add(msg.value);
+            _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
+            _coinBalance = _coinBalance.sub(amount);
+            _amountRaised = _amountRaised.add(msg.value);
+            emit FundTransfer(_addr, msg.value, true);
+            _tokenCoins.transfer(_addr, amount);
+        //}
     }
     
     /**
@@ -187,7 +200,7 @@ contract SonexICO is owned, ERC223ReceivingContract {
      * @param _value -
      * @param _data - 
      */
-    function tokenFallback(address _from, uint256 _value, bytes _data) onlyOwner external { //what to do with data
+    function tokenFallback(address _from, uint256 _value, bytes _data) external { //what to do with data
         if(_supportsToken[_from]) {
         _coinBalance = _coinBalance.add(_value);
         _data; // Inefficiency!!!
