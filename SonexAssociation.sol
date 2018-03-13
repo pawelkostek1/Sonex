@@ -8,7 +8,7 @@ library SafeMath {
 
   /**
   * @dev Multiplies two numbers, throws on overflow.
-  * 
+  *
   * @param a -
   * @param b -
   */
@@ -23,7 +23,7 @@ library SafeMath {
 
   /**
   * @dev Integer division of two numbers, truncating the quotient.
-  * 
+  *
   * @param a -
   * @param b -
   */
@@ -36,7 +36,7 @@ library SafeMath {
 
   /**
   * @dev Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
-  * 
+  *
   * @param a -
   * @param b -
   */
@@ -47,7 +47,7 @@ library SafeMath {
 
   /**
   * @dev Adds two numbers, throws on overflow.
-  * 
+  *
   * @param a -
   * @param b -
   */
@@ -62,17 +62,17 @@ library SafeMath {
  * @dev Contract that implements the ownership. The right to call the function designated by onlyOwner modifier.
  */
 contract owned {
-    address public owner;
-    
+    address private owner;
+
     function owned() public {
         owner = msg.sender;
     }
-    
+
     modifier onlyOwner {
         require(msg.sender == owner);
         _;
     }
-    
+
     function transferOwnership(address newOwner) onlyOwner public {
         owner = newOwner;
     }
@@ -84,13 +84,13 @@ contract owned {
 contract tokenRecipient {
     event receivedEther(address sender, uint amount);
     event receivedTokens(address _from, uint256 _value, address _token, bytes _extraData);
-    
+
     function receiveApporval(address _from, uint256 _value, address _token, bytes _extraData) external {
         Token t = Token(_token);
         emit receivedTokens(_from, _value, _token, _extraData);
         require(t.transferFrom(_from, this, _value));
     }
-    
+
     function () payable public {
         emit receivedEther(msg.sender, msg.value);
     }
@@ -113,12 +113,12 @@ contract SonexAssociation is owned, tokenRecipient {
     Proposal[] private allProposals;
     uint private numProposals;
     Token private sharesTokenAddress;
-    
+
     event ProposalAdded(uint proposalID, address recipient, uint amount, string description);
     event Voted(uint proposalID, bool position, address voter);
     event ProposalTallied(uint proposalID, uint result, uint quorum, bool active);
     event ChangeOfRules(uint newMinimumQuorum, uint newDebatingPeriodInMinutes, address newSharesTokenAddress);
-    
+
     struct Proposal {
         address recipient;
         uint amount;
@@ -131,12 +131,12 @@ contract SonexAssociation is owned, tokenRecipient {
         Vote[] votes;
         mapping (address => bool) voted;
     }
-    
+
     struct Vote {
         bool inSupport;
         address voter;
     }
-    
+
     /**
      * @dev Modifier that allows only shareholders to vote and create new proposals.
      */
@@ -144,27 +144,27 @@ contract SonexAssociation is owned, tokenRecipient {
         require(sharesTokenAddress.balanceOf(msg.sender) > 0);
         _;
     }
-    
+
     /**
      * @dev Constructor function - sets up basic parameters for running the proposals in the association.
-     * 
-     * @param sharesAddress - 
-     * @param minimumSharesToPassAVote - 
+     *
+     * @param sharesAddress -
+     * @param minimumSharesToPassAVote -
      * @param minutesForDebate -
      */
     function Association(Token sharesAddress, uint minimumSharesToPassAVote, uint minutesForDebate) payable public { //Why this is payable?
         changeVotingRules(sharesAddress, minimumSharesToPassAVote, minutesForDebate);
     }
-    
+
     /**
      * @dev Change voting rules - make so that proposals need to be discussed for at least 'minutesForDebate/60' hours
      *      and all voters combines must own more than 'minimumSharesToPassAVote' shares of token 'sharesAddress' to be executes.
-     * 
+     *
      * @param sharesAddress - token address
      * @param minimumSharesToPassAVote - proposal can vote only if the sum of shares held by all voters excees this numberOfVotes
      * @param minutesForDebate - the minimum amount of delay between when a proposal is made and when it can be executed
      */
-    
+
     function changeVotingRules(Token sharesAddress, uint minimumSharesToPassAVote, uint minutesForDebate) onlyOwner public {
         sharesTokenAddress = Token(sharesAddress);
         if (minimumSharesToPassAVote == 0) minimumSharesToPassAVote = 1;
@@ -172,10 +172,10 @@ contract SonexAssociation is owned, tokenRecipient {
         debatingPeriodInMinutes = minutesForDebate;
         emit ChangeOfRules(minimumQuorum, debatingPeriodInMinutes, sharesTokenAddress);
     }
-    
+
     /**
      * @dev Add Proposal - propose to send 'weiAmount / 1e18' ether to 'beneficiary' for 'jobDescription' . 'transactionBytecode ? Contains : Doeas not contain'.
-     * 
+     *
      * @param beneficiary - who to send the ether to
      * @param weiAmount - amount of ether to send, in wei
      * @param jobDescription - description of jobDescription
@@ -203,14 +203,14 @@ contract SonexAssociation is owned, tokenRecipient {
         p.numberOfVotes = 0;
         emit ProposalAdded(proposalID, beneficiary, weiAmount, jobDescription);
         numProposals = proposalID + 1;
-        
+
         return proposalID;
     }
-    
+
     /**
      * @dev Add proposal in Ether - propose to send 'etherAmount' ether to 'benficiary' for 'jobDescription'. 'transactionBytecode ? Contains : Does not contain' code.
      *      This is a convinience function to use if the amount to be given is in round number of ether uints.
-     * 
+     *
      * @param beneficiary - who to send the ether to
      * @param etherAmount - amount of ether to send
      * @param jobDescription - decription of job
@@ -228,10 +228,10 @@ contract SonexAssociation is owned, tokenRecipient {
     {
         return newProposal(beneficiary, etherAmount * 1 ether, jobDescription, transactionBytecode);
     }
-    
+
     /**
      * @dev Check if a proposal code matches.
-     * 
+     *
      * @param proposalNumber - ID number of the proposal to query
      * @param beneficiary - who to send the ether to
      * @param weiAmount - amount of ether to send
@@ -250,10 +250,10 @@ contract SonexAssociation is owned, tokenRecipient {
         Proposal storage p = allProposals[proposalNumber];
         return p.proposalHash == keccak256(beneficiary, weiAmount, transactionBytecode);
     }
-    
+
     /**
      * @dev Log a vote for a proposalNumber - vote 'supportsProposal? in support of: against' proposal #'proposalNumber'.
-     * 
+     *
      * @param proposalNumber - number of proposal
      * @param supportsProposal - either in favor or against it
      */
@@ -267,7 +267,7 @@ contract SonexAssociation is owned, tokenRecipient {
     {
         Proposal storage p = allProposals[proposalNumber];
         require(p.voted[msg.sender] != true);
-        
+
         voteID = p.votes.length++;
         p.votes[voteID] = Vote({inSupport: supportsProposal, voter: msg.sender});
         p.voted[msg.sender] = true;
@@ -275,24 +275,24 @@ contract SonexAssociation is owned, tokenRecipient {
         emit Voted(proposalNumber, supportsProposal, msg.sender);
         return voteID;
     }
-    
+
     /**
      * @dev Finish vote - Count the votes proposal #'proposalNumber' and execute it if approved
-     * 
+     *
      * @param proposalNumber - proposal number
      * @param transactionBytecode - option: if the transaction contained a bytecode, you need to send it
      */
     function executeProposal(uint proposalNumber, bytes transactionBytecode) public { //Do we want it to be public?
         Proposal storage p = allProposals[proposalNumber];
-        
+
         require(now > p.votingDeadline
                 && !p.executed
                 && p.proposalHash == keccak256(p.recipient, p.amount, transactionBytecode));
-        
+
         uint quorum = 0;
         uint yea = 0;
         uint nay = 0;
-        
+
         for (uint i = 0; i < p.votes.length; ++i) {
             Vote storage v = p.votes[i];
             uint voteWeight = sharesTokenAddress.balanceOf(v.voter);
@@ -303,20 +303,18 @@ contract SonexAssociation is owned, tokenRecipient {
                 nay += voteWeight;
             }
         }
-        
+
         require(quorum >= minimumQuorum);
-        
+
         if(yea > nay){
             p.executed = true;
             require(p.recipient.call.value(p.amount)(transactionBytecode));
-            
+
             p.proposalPassed = true;
         } else {
             p.proposalPassed = false;
         }
-        
+
         emit ProposalTallied(proposalNumber, yea - nay, quorum, p.proposalPassed);
     }
 }
-
-

@@ -10,7 +10,7 @@ library SafeMath {
   * @dev Multiplies two numbers, throws on overflow.
   */
   function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    if (a == 0) {
+    if (a == 0) {https://insuranceblog.accenture.com/how-chatbots-are-transforming-insurance-eight-examples
       return 0;
     }
     uint256 c = a * b;
@@ -50,17 +50,17 @@ library SafeMath {
  * @dev Contract that implements the ownership. The right to call the function designated by onlyOwner modifier
  */
 contract owned {
-    address public owner;
-    
+    address private owner;
+
     function owned() public {
         owner = msg.sender;
     }
-    
+
     modifier onlyOwner {
         require(msg.sender == owner);
         _;
     }
-    
+
     function transferOwnership(address newOwner) onlyOwner public {
         owner = newOwner;
     }
@@ -75,100 +75,110 @@ interface ERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approve(address indexed from, address indexed to, uint256 value);
     //event Burn(address indexed from, uint256 value);
-    
+
     function transfer(address _to, uint256 _value) external;
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool success);
     function approve(address _spender, uint256 _value) external returns (bool success);
     function approveAndCall(address _spender, uint256 _value, bytes _extraData) external returns (bool success);
+
+    //The following functions does not belong to the ERC20 Standard
     //function burn(uint256 _value) external returns (bool success);
     //function burnFrom(address _from, uint256 _value) external returns (bool success);
 }
-
+/*
 interface ERC223 {
     function transfer(address _to, uint256 _value, bytes _data) external;
     function transferFrom(address _from, address _to, uint256 _value, bytes _data) external returns (bool success);
     event Transfer(address indexed from, address indexed to, uint256 value, bytes indexed data);
 }
+*/
+//interface ERC223ReceivingContract {function tokenFallback(address _from, uint256 _value, bytes _data) external; }
 
-interface ERC223ReceivingContract {function tokenFallback(address _from, uint256 _value, bytes _data) external; }
-
+//A custom version of the Receiving Contract interface to comply with ERC20
+interface ERC20ReceivingContract {function tokenFallback(address _from, uint256 _value, address token) external; }
 /**
  * @dev Implementation of the custom token - the Sonex shares (mostly based on reference implementation). Ownership of the Sonex Contract will be assigned to the association.
  */
 contract SonexToken is owned, ERC20, ERC223 {
-    
+
     using SafeMath for uint256;
-    
+
     string private _name;
     string private _symbol;
     uint8 private _decimals = 18;
     uint256 private _totalSupply;
-    
+
     //uint256 public sellPrice;
     //uint256 public buyPrice;
-    
+
     mapping (address => uint256) private _balanceOf;
-    mapping (address => mapping (address => uint256)) public allowance;
+    mapping (address => mapping (address => uint256)) private allowance;
 
     /**
      * @dev Constructor function - sets up basic parameters.
-     * 
-     * @param initialSupply - 
-     * @param tokenName - 
-     * @param tokenSymbol -
+     *
+     * @param initialSupply - initial supply of the token
+     * @param tokenName - name of the token
+     * @param tokenSymbol - symbol of the token
      */
     function SonexToken(
         uint256 initialSupply,
         string tokenName,
         string tokenSymbol
     ) onlyOwner public {
-        
+
         _totalSupply = initialSupply * (10 ** uint256(_decimals));
         _balanceOf[msg.sender] = _totalSupply;
         _name = tokenName;
         _symbol = tokenSymbol;
     }
-    
+
     /**
      * @dev Getter function - returns name of the token.
      */
     function name() public view returns (string){
         return _name;
     }
-    
+
         /**
      * @dev Getter function - returns symbol of the token.
      */
     function symbol() public view returns (string){
         return _symbol;
     }
-    
+
         /**
      * @dev Getter function - returns number of decimal places of the token.
      */
     function decimals() public view returns (uint8){
         return _decimals;
     }
-    
+
     /**
      * @dev Getter function - returns total supply of the token.
      */
     function totalSupply() public view returns (uint256){
         return _totalSupply;
     }
-    
+
     /**
-     * @dev Getter function - returns token balance of a particular address
+     * @dev Getter function - returns token balance of a msg.sender
      */
     function balanceOf() public view returns (uint256){
         return _balanceOf[msg.sender];
     }
-    
+
+    /**
+     * @dev Getter function - returns token allowance of a particular address
+     */
+    function allowanceOf(address _addr) public view returns (uint256){
+        return _balanceOf[msg.sender][_addr];
+    }
     /**
      * @dev mintToken function - implements the functionality to mint new tokens.
-     * 
-     * @param target - 
-     * @param mintedAmount - 
+     *
+     * @param target -
+     * @param mintedAmount -
      */
      /*
     function mintToken(address target, uint256 mintedAmount) onlyOwner public {
@@ -180,29 +190,29 @@ contract SonexToken is owned, ERC20, ERC223 {
         emit Transfer(this, target, mintedAmount);
     }
     */
-    
+
     /**
      * @dev isContract function - returns whether given address is a contract. Currently, only inline assemly implementation is possible.
-     * 
-     * @param _target - 
+     *
+     * @param _target - an address of the destination for the transaction, will be evaluated whether it is a contract.
      */
     function _isContract(address _target) internal view returns (bool){ //warning that it is constant?
-        
+
         uint codeLength;
         assembly {
             // Retrieve the size of the code on target address, this needs assembly .
             codeLength := extcodesize(_target)
         }
-        
+
         return codeLength > 0;
     }
-    
+
     /**
      * @dev Convinience transfer function - implements the basic transfer functionality. Performs various checks, uses SafeMath to avoid overflow.
-     * 
-     * @param _from - 
-     * @param _to - 
-     * @param _value -
+     *
+     * @param _from - an address from which the balance will be deduced
+     * @param _to - an address to which the balance will be added
+     * @param _value - the value to be transfered between addresses
      */
     function _transfer(address _from, address _to, uint256 _value) internal {
         //Prevents from sending to address 0x0.
@@ -216,26 +226,30 @@ contract SonexToken is owned, ERC20, ERC223 {
         _balanceOf[_to] = _balanceOf[_to].add(_value);
         assert(_balanceOf[_from].add(_balanceOf[_to]) == previousBalances);
     }
-    
+
     /**
      * @dev ERC20 compatible transfer function - exists due to backward compatibility support with the ERC20 Standard. It implements transfer of Sonex token beetwen transaction sender and taget account.
-     * 
-     * @param _to - 
+     *
+     * @param _to -
      * @param _value -
      */
     function transfer(address _to, uint256 _value) external {
-        require(!_isContract(_to));
         emit Transfer(msg.sender, _to, _value);
+        if(_isContract(_to)){
+            ERC223ReceivingContract _contract  = ERC223ReceivingContract(_to);
+            _contract.tokenFallback(msg.sender, _value, this);
+        }
         _transfer(msg.sender, _to, _value);
     }
-    
+
     /**
      * @dev ERC223 compatible transfer function - implements transfer of Sonex token beetwen transaction sender and taget account.
-     * 
-     * @param _to - 
+     *
+     * @param _to -
      * @param _value -
-     * @param _data - 
+     * @param _data -
      */
+     /*
     function transfer(address _to, uint256 _value, bytes _data) external {
         emit Transfer(msg.sender, _to, _value, _data);
         _transfer(msg.sender, _to, _value);
@@ -244,32 +258,36 @@ contract SonexToken is owned, ERC20, ERC223 {
             _contract.tokenFallback(msg.sender, _value, _data);
         }
     }
-    
+    */
     /**
-     * @dev ERC20 compatible transferFrom function - exists due to backward compatibility support with the ERC20 Standard. 
+     * @dev ERC20 compatible transferFrom function - exists due to backward compatibility support with the ERC20 Standard.
      *          It implements transfer of Sonex token on behalf of other person to a taget account. A sufficient allowance is required.
-     * 
-     * @param _from - 
-     * @param _to - 
+     *
+     * @param _from -
+     * @param _to -
      * @param _value -
      */
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool success) {
         require(_value <= allowance[_from][msg.sender]);
-        require(!_isContract(_to));
         allowance[_from][msg.sender] =  allowance[_from][msg.sender].sub(_value);
          emit Transfer(msg.sender, _to, _value);
+         if(_isContract(_to)){
+             ERC223ReceivingContract _contract  = ERC223ReceivingContract(_to);
+             _contract.tokenFallback(msg.sender, _value, this);
+         }
         _transfer(_from, _to, _value);
         return true;
     }
-    
+
     /**
      * @dev ERC223 compatible transferFrom function - implements transfer of Sonex token on behalf of other person to a taget account. A sufficient allowance is required.
-     * 
+     *
      * @param _from -
-     * @param _to - 
+     * @param _to -
      * @param _value -
-     * @param _data - 
+     * @param _data -
      */
+     /*
     function transferFrom(address _from, address _to, uint256 _value, bytes _data) external returns (bool success) {
         require(_value <= allowance[_from][msg.sender]);
         allowance[_from][msg.sender] =  allowance[_from][msg.sender].sub(_value);
@@ -281,24 +299,24 @@ contract SonexToken is owned, ERC20, ERC223 {
         _transfer(_from, _to, _value);
         return true;
     }
-    
+    */
     /**
      * @dev ERC20 compatible approve function - implements the apporval of the allowance.
      * Approve
-     * @param _spender -
-     * @param _value - 
+     * @param _spender - an address of a person that will be allowed to spend the money
+     * @param _value - the value of how much a person is allowed to spend
      */
     function approve(address _spender, uint256 _value) external returns (bool success) {
         emit Approve(msg.sender, _spender, _value);
         allowance[msg.sender][_spender] = _value;
         return true;
     }
-    
+
     /**
      * @dev ERC20 compatible approveAndCall function - implements the apporval of the allowance and the corresponding call to contracts receiving the token.
-     * 
-     * @param _spender -
-     * @param _value - 
+     *
+     * @param _spender - an address of a person that will be allowed to spend the money
+     * @param _value - the value of how much a person is allowed to spend
      */
     function approveAndCall(address _spender, uint256 _value, bytes _extraData) external returns (bool success) {
         emit Approve(msg.sender, _spender, _value);
@@ -307,11 +325,11 @@ contract SonexToken is owned, ERC20, ERC223 {
         spender.receiveApproval(msg.sender, _value, this, _extraData);
         return true;
     }
-    
+
     /**
      * @dev ERC20 compatible burn function - burns a specified amount of token supply from a transaction sender account.
-     * 
-     * @param _value - 
+     *
+     * @param _value -
      */
      /*
     function burn(uint256 _value) onlyOwner external returns (bool success) { //Only possibly to execute by the association
@@ -324,9 +342,9 @@ contract SonexToken is owned, ERC20, ERC223 {
     */
     /**
      * @dev ERC20 compatible burnFrom function - burns a specified amount of token supply on behalf of other person account. A sufficient allowance is required.
-     * 
+     *
      * @param _from -
-     * @param _value - 
+     * @param _value -
      */
      /*
     function burnFrom(address _from, uint256 _value) onlyOwner external returns (bool success) { //Only possibly to execute by the association
@@ -339,23 +357,23 @@ contract SonexToken is owned, ERC20, ERC223 {
         return true;
     }
     */
-    
+
     //---------------------------------------------------------------------------------
     //Potential extensions
     //---------------------------------------------------------------------------------
-    
+
     /*
     function setPrices(uint256 newSellPrice, uint256 newBuyPrice) onlyOwner public {
         sellPrice = newSellPrice;
         buyPrice = newBuyPrice;
     }
-    
+
     //This contract should not own any tokens, otherwise it must implement tokenFallback function
     function buy() payable public {
         uint256 amount = msg.value / buyPrice;
         _transfer(this, msg.sender, amount);
     }
-    
+
     function sell(uint256 amount) public {
         require(address(this).balance >= amount * sellPrice);
         _transfer(msg.sender, this, amount);
