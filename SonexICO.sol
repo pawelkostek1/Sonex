@@ -70,12 +70,12 @@ contract owned {
  * @dev Common interfaces to integrate with the ERC223 Standard.
  */
 interface Token {function transfer(address receiver, uint256 amount) external; }
-interface ERC223ReceivingContract {function tokenFallback(address _from, uint256 _value, bytes _data) external; }
+interface ERC20ReceivingContract {function tokenFallback(address _from, uint256 _value, address token) external; }
 
 /**
  * @dev Custom crowsale implementation (mostly based on reference implementation).
  */
-contract SonexICO is owned, ERC223ReceivingContract {
+contract SonexICO is owned, ERC20ReceivingContract {
 
     using SafeMath for uint256;
 

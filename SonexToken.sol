@@ -164,8 +164,8 @@ contract SonexToken is owned, ERC20 {
     /**
      * @dev Getter function - returns token balance of a msg.sender
      */
-    function balanceOf() public view returns (uint256){
-        return _balanceOf[msg.sender];
+    function balanceOf(address _addr) public view returns (uint256){
+        return _balanceOf[_addr];
     }
 
     /**
@@ -186,8 +186,8 @@ contract SonexToken is owned, ERC20 {
         _totalSupply = _totalSupply.add(mintedAmount);
         //Is it required to use Transfer event with data?
         //Depends whether we transfer it to contract...
-        emit Transfer(0, this, mintedAmount);
-        emit Transfer(this, target, mintedAmount);
+         Transfer(0, this, mintedAmount);
+         Transfer(this, target, mintedAmount);
     }
     */
 
@@ -234,7 +234,7 @@ contract SonexToken is owned, ERC20 {
      * @param _value -
      */
     function transfer(address _to, uint256 _value) external {
-        emit Transfer(msg.sender, _to, _value);
+        Transfer(msg.sender, _to, _value);
         if(_isContract(_to)){
             ERC20ReceivingContract _contract  = ERC20ReceivingContract(_to);
             _contract.tokenFallback(msg.sender, _value, this);
@@ -251,7 +251,7 @@ contract SonexToken is owned, ERC20 {
      */
      /*
     function transfer(address _to, uint256 _value, bytes _data) external {
-        emit Transfer(msg.sender, _to, _value, _data);
+          Transfer(msg.sender, _to, _value, _data);
         _transfer(msg.sender, _to, _value);
         if(_isContract(_to)){
             ERC223ReceivingContract _contract  = ERC223ReceivingContract(_to);
@@ -270,8 +270,8 @@ contract SonexToken is owned, ERC20 {
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool success) {
         require(_value <= _allowance[_from][msg.sender]);
         _allowance[_from][msg.sender] =  _allowance[_from][msg.sender].sub(_value);
-         emit Transfer(msg.sender, _to, _value);
-         if(_isContract(_to)){
+        Transfer(msg.sender, _to, _value);
+        if(_isContract(_to)){
              ERC20ReceivingContract _contract  = ERC20ReceivingContract(_to);
              _contract.tokenFallback(msg.sender, _value, this);
          }
@@ -291,7 +291,7 @@ contract SonexToken is owned, ERC20 {
     function transferFrom(address _from, address _to, uint256 _value, bytes _data) external returns (bool success) {
         require(_value <= allowance[_from][msg.sender]);
         allowance[_from][msg.sender] =  allowance[_from][msg.sender].sub(_value);
-        emit Transfer(msg.sender, _to, _value, _data);
+          Transfer(msg.sender, _to, _value, _data);
         if(_isContract(_to)){
             ERC223ReceivingContract _contract  = ERC223ReceivingContract(_to);
             _contract.tokenFallback(msg.sender, _value, _data);
@@ -307,7 +307,7 @@ contract SonexToken is owned, ERC20 {
      * @param _value - the value of how much a person is allowed to spend
      */
     function approve(address _spender, uint256 _value) external returns (bool success) {
-        emit Approve(msg.sender, _spender, _value);
+        Approve(msg.sender, _spender, _value);
         _allowance[msg.sender][_spender] = _value;
         return true;
     }
@@ -319,7 +319,7 @@ contract SonexToken is owned, ERC20 {
      * @param _value - the value of how much a person is allowed to spend
      */
     function approveAndCall(address _spender, uint256 _value, bytes _extraData) external returns (bool success) {
-        emit Approve(msg.sender, _spender, _value);
+        Approve(msg.sender, _spender, _value);
         tokenRecipient spender = tokenRecipient(_spender);
         _allowance[msg.sender][_spender] = _value;
         spender.receiveApproval(msg.sender, _value, this, _extraData);
@@ -336,7 +336,7 @@ contract SonexToken is owned, ERC20 {
         require(_balanceOf[msg.sender] >= _value);
         _balanceOf[msg.sender] = _balanceOf[msg.sender].sub(_value);
         _totalSupply = _totalSupply.sub(_value);
-        emit Burn(msg.sender, _value);
+        Burn(msg.sender, _value);
         return true;
     }
     */
@@ -353,7 +353,7 @@ contract SonexToken is owned, ERC20 {
         _balanceOf[_from ] = _balanceOf[_from ].sub(_value);
         allowance[_from][msg.sender] = allowance[_from][msg.sender].sub(_value);
         _totalSupply -= _value;
-        emit Burn(_from, _value);
+        Burn(_from, _value);
         return true;
     }
     */
