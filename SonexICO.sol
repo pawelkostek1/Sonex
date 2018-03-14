@@ -83,6 +83,7 @@ contract SonexICO is owned, ERC223ReceivingContract {
     uint256 private _fundingGoal;
     uint256 private _amountRaised;
     uint256 private _deadline;
+    uint256 private _deadlinePrivateICO;
     uint256 private _durationPrivateICO;
     uint256 private _minimumInvestmentInPrivateICO
     uint256 private _limit;
@@ -143,7 +144,8 @@ contract SonexICO is owned, ERC223ReceivingContract {
         _fundingGoal = fundingGoalInEthers.mul(1 ether);
         _deadline = now.add(durationInMinutes.mul(1 minutes));//'now' does not refer to the current time, it is a Block.timestamp.
         _durationPrivateICO = durationInMinutesOfPrivateICO.mul(1 minutes);
-        _minimumInvestmentInPrivateICO = minimumInvestmentInPrivateICO;
+        _deadlinePrivateICO = now.add(_durationPrivateICO);
+        _minimumInvestmentInPrivateICO = minimumInvestmentInPrivateICO.mul(1 ether);
         _price = etherCostOfEachCoin.mul(1 ether);
         _limit = coinLimit;
         _tokenCoins = Token(addressCoins);
@@ -174,6 +176,19 @@ contract SonexICO is owned, ERC223ReceivingContract {
     /**
      * @dev Buy function - allows transaction sender to purchase shares.
      */
+    function _buy(address _addr, uint256 _value, uint256 amount) payable internal {//do we have to make it payable??
+      require(_value >= _minimumInvestmentInPrivateICO);
+      _balanceOf[_addr] = _balanceOf[_addr].add(_value);
+      _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
+      _coinBalance = _coinBalance.sub(amount);
+      _amountRaised = _amountRaised.add(_value);
+      emit FundTransfer(_addr, _value, true);
+      _tokenCoins.transfer(_addr, amount;
+    }
+
+    /**
+     * @dev Buy function - allows transaction sender to purchase shares.
+     */
     function buy() payable public {
         buyFor(msg.sender);
     }
@@ -185,32 +200,14 @@ contract SonexICO is owned, ERC223ReceivingContract {
      */
     function buyFor(address _addr) availableCoin(msg.value) withinLimit(_addr, msg.value) payable public {
         uint256 amount = msg.value.div(_price);
-        /*
-        if(now<=_durationPrivateICO.div(20 minutes)){//first week private ICO
-          require(_minimumInvestmentInPrivateICO);
-          _balanceOf[_addr] = _balanceOf[_addr].add(msg.value);
-          _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
-          _coinBalance = _coinBalance.sub(amount);
-          _amountRaised = _amountRaised.add(msg.value);
-          emit FundTransfer(_addr, msg.value, true);
-          _tokenCoins.transfer(_addr, amount.mul(1.5));
-        }else if(now<=_deadline.sub(10 minutes)&&now>_deadline.sub(20 minutes)){//second week private ICO
-          require(_minimumInvestmentInPrivateICO);
-          _balanceOf[_addr] = _balanceOf[_addr].add(msg.value);
-          _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
-          _coinBalance = _coinBalance.sub(amount);
-          _amountRaised = _amountRaised.add(msg.value);
-          emit FundTransfer(_addr, msg.value, true);
-          _tokenCoins.transfer(_addr, amount);
+
+        if(now <= _deadlinePrivateICO.sub(_durationPrivateICO.div(2))){//first week private ICO
+          _buy(_addr, msg.value, amount);
+        }else if(now <=_deadlinePrivateICO){//second week private ICO
+          _buy(_addr, msg.value, amount);
         }else{//public ICC
-          */
-            _balanceOf[_addr] = _balanceOf[_addr].add(msg.value);
-            _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
-            _coinBalance = _coinBalance.sub(amount);
-            _amountRaised = _amountRaised.add(msg.value);
-            emit FundTransfer(_addr, msg.value, true);
-            _tokenCoins.transfer(_addr, amount);
-        //}
+          _buy(_addr, msg.value, amount);
+        }
     }
 
     /**
