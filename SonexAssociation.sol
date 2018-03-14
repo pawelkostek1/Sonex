@@ -9,8 +9,8 @@ library SafeMath {
   /**
   * @dev Multiplies two numbers, throws on overflow.
   *
-  * @param a -
-  * @param b -
+  * @param a - first integer nuber
+  * @param b - second integer number
   */
   function mul(uint256 a, uint256 b) internal pure returns (uint256) {
     if (a == 0) {
@@ -24,8 +24,8 @@ library SafeMath {
   /**
   * @dev Integer division of two numbers, truncating the quotient.
   *
-  * @param a -
-  * @param b -
+  * @param a - first integer nuber
+  * @param b - second integer number
   */
   function div(uint256 a, uint256 b) internal pure returns (uint256) {
     // assert(b > 0); // Solidity automatically throws when dividing by 0
@@ -37,8 +37,8 @@ library SafeMath {
   /**
   * @dev Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
   *
-  * @param a -
-  * @param b -
+  * @param a - first integer nuber
+  * @param b - second integer number
   */
   function sub(uint256 a, uint256 b) internal pure returns (uint256) {
     assert(b <= a);
@@ -48,8 +48,8 @@ library SafeMath {
   /**
   * @dev Adds two numbers, throws on overflow.
   *
-  * @param a -
-  * @param b -
+  * @param a - first integer nuber
+  * @param b - second integer number
   */
   function add(uint256 a, uint256 b) internal pure returns (uint256) {
     uint256 c = a + b;

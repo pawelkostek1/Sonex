@@ -8,6 +8,9 @@ library SafeMath {
 
   /**
   * @dev Multiplies two numbers, throws on overflow.
+  *
+  * @param a - first integer nuber
+  * @param b - second integer number
   */
   function mul(uint256 a, uint256 b) internal pure returns (uint256) {
     if (a == 0) {
@@ -20,6 +23,9 @@ library SafeMath {
 
   /**
   * @dev Integer division of two numbers, truncating the quotient.
+  *
+  * @param a - first integer nuber
+  * @param b - second integer number
   */
   function div(uint256 a, uint256 b) internal pure returns (uint256) {
     // assert(b > 0); // Solidity automatically throws when dividing by 0
@@ -30,6 +36,9 @@ library SafeMath {
 
   /**
   * @dev Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  *
+  * @param a - first integer nuber
+  * @param b - second integer number
   */
   function sub(uint256 a, uint256 b) internal pure returns (uint256) {
     assert(b <= a);
@@ -38,6 +47,9 @@ library SafeMath {
 
   /**
   * @dev Adds two numbers, throws on overflow.
+  *
+  * @param a - first integer nuber
+  * @param b - second integer number
   */
   function add(uint256 a, uint256 b) internal pure returns (uint256) {
     uint256 c = a + b;
@@ -75,10 +87,11 @@ interface ERC20ReceivingContract {function tokenFallback(address _from, uint256 
 /**
  * @dev Custom crowsale implementation (mostly based on reference implementation).
  */
-contract SonexICO is owned, ERC20ReceivingContract {
+contract SonexIco is owned, ERC20ReceivingContract {
 
     using SafeMath for uint256;
 
+    //Define the internal parameters of the contract
     address private _association;
     uint256 private _fundingGoal;
     uint256 private _amountRaised;
@@ -118,38 +131,40 @@ contract SonexICO is owned, ERC20ReceivingContract {
     /**
      * @dev Constructor function - sets up basic parameters and Crowdsale ownership.
      *
-     * @param ifSuccessfulSendTo -
-     * @param fundingGoalInEthers -
-     * @param durationInMinutes -
-     * @param etherCostOfEachCoin -
-     * @param addressCoins -
-     * @param coinLimit -
+     * @param ifSuccessfulSendTo - the address where the raised funds will be send in case of succesful ICO
+     * @param fundingGoalInEthers - the goal to be achived during ICO
+     * @param durationInMinutesOfICO - the duration of the ICO in minutes
+     * @param durationInMinutesOfPrivateICO - the duration of the private ICO (part of the whole ICO)
+     * @param minimumInvestmentInPrivateICO - the minimum investment that is required to participate in the private ICO
+     * @param costOfEachCoinInWei - cost of each coin in wei
+     * @param addressOfCoinContract - the address of the token contract
+     * @param limitOnTheNumberOfCoinsPersonCanBuy - the limit of how many coins can a single person buy
      */
-    function SonexICO (
+    function SonexIco (
         address ifSuccessfulSendTo,
         uint256 fundingGoalInEthers,
-        uint256 durationInMinutes,
+        uint256 durationInMinutesOfICO,
         uint256 durationInMinutesOfPrivateICO,
         uint256 minimumInvestmentInPrivateICO,
-        uint256 etherCostOfEachCoin,
-        address addressCoins,
-        uint256 coinLimit
+        uint256 costOfEachCoinInWei,
+        address addressOfCoinContract,
+        uint256 limitOnTheNumberOfCoinsPersonCanBuy
     ) onlyOwner public { //Not sure whether onlyOwner modifier is needed here. Do we want this to be public?
 
-        require(etherCostOfEachCoin > 0);
+        require(costOfEachCoinInWei > 0);
         require(ifSuccessfulSendTo != address(0));
-        require(addressCoins != address(0));
+        require(addressOfCoinContract != address(0));
 
         _association = ifSuccessfulSendTo;
         _fundingGoal = fundingGoalInEthers.mul(1 ether);
-        _deadline = now.add(durationInMinutes.mul(1 minutes));//'now' does not refer to the current time, it is a Block.timestamp.
+        _deadline = now.add(durationInMinutesOfICO.mul(1 minutes));//'now' does not refer to the current time, it is a Block.timestamp.
         _durationPrivateICO = durationInMinutesOfPrivateICO.mul(1 minutes);
         _deadlinePrivateICO = now.add(_durationPrivateICO);
         _minimumInvestmentInPrivateICO = minimumInvestmentInPrivateICO.mul(1 ether);
-        _price = etherCostOfEachCoin.mul(1 ether);
-        _limit = coinLimit;
-        _tokenCoins = Token(addressCoins);
-        _supportsToken[addressCoins] = true;
+        _price = costOfEachCoinInWei;
+        _limit = limitOnTheNumberOfCoinsPersonCanBuy;
+        _tokenCoins = Token(addressOfCoinContract);
+        _supportsToken[addressOfCoinContract] = true;
     }
 
     /**
@@ -202,7 +217,7 @@ contract SonexICO is owned, ERC20ReceivingContract {
 
         if(now <= _deadlinePrivateICO.sub(_durationPrivateICO.div(2))){//first week private ICO
           require(msg.value >= _minimumInvestmentInPrivateICO);
-          _buy(_addr, msg.value, amount);
+          _buy(_addr, msg.value, amount.add(amount.div(2)));
         }else if(now <=_deadlinePrivateICO){//second week private ICO
           require(msg.value >= _minimumInvestmentInPrivateICO);
           _buy(_addr, msg.value, amount);
@@ -214,9 +229,9 @@ contract SonexICO is owned, ERC20ReceivingContract {
     /**
      * @dev Token fallback function - registers all the shares to be sold in the Crowdsale. It can be executed only by the association.
      *
-     * @param _from - received the transfer from
-     * @param _value -
-     * @param token -
+     * @param _from - address of the person or contract transfering the money to the ICO
+     * @param _value - the value of how much was transfered
+     * @param token - the address of the token that was transfered in the transaction
      */
     function tokenFallback(address _from, uint256 _value, address token) external { //what to do with data
         if(_supportsToken[token]){
@@ -239,7 +254,7 @@ contract SonexICO is owned, ERC20ReceivingContract {
     /**
      * @dev Ether withdrawal function - in case of funding goal reached allows the association to Withdraw the funds. Alternativly, the right to Withdraw ether goes to contributors.
      */
-    function safeWithdrawal() afterDeadline public {
+    function safeWithdrawal() afterDeadline public { //Must revise this part of the code!!!
         /*
         if (!_fundingGoalReached) {
             uint256 amount = _balanceOf[msg.sender];
