@@ -177,7 +177,6 @@ contract SonexICO is owned, ERC20ReceivingContract {
      * @dev Buy convinience function - allows transaction sender to purchase shares.
      */
     function _buy(address _addr, uint256 _value, uint256 amount) internal {//do we have to make it payable??
-      require(_value >= _minimumInvestmentInPrivateICO);
       _balanceOf[_addr] = _balanceOf[_addr].add(_value);
       _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
       _coinBalance = _coinBalance.sub(amount);
@@ -202,8 +201,10 @@ contract SonexICO is owned, ERC20ReceivingContract {
         uint256 amount = msg.value.div(_price);
 
         if(now <= _deadlinePrivateICO.sub(_durationPrivateICO.div(2))){//first week private ICO
+          require(msg.value >= _minimumInvestmentInPrivateICO);
           _buy(_addr, msg.value, amount);
         }else if(now <=_deadlinePrivateICO){//second week private ICO
+          require(msg.value >= _minimumInvestmentInPrivateICO);
           _buy(_addr, msg.value, amount);
         }else{//public ICC
           _buy(_addr, msg.value, amount);
@@ -220,8 +221,8 @@ contract SonexICO is owned, ERC20ReceivingContract {
     function tokenFallback(address _from, uint256 _value, address token) external { //what to do with data
         if(_supportsToken[token]){
         _coinBalance = _coinBalance.add(_value);
-        _from;
         }
+        _from;
     }
 
     /**
@@ -245,7 +246,7 @@ contract SonexICO is owned, ERC20ReceivingContract {
             _balanceOf[msg.sender] = 0;
             if(amount > 0){
                 if(msg.sender.send(amount)){
-                    emit FundTransfer(msg.sender, amount, false);
+                    FundTransfer(msg.sender, amount, false);
                 } else {
                     _balanceOf[msg.sender] = amount;
                 }
@@ -254,7 +255,7 @@ contract SonexICO is owned, ERC20ReceivingContract {
 
         if (_fundingGoalReached && _association == msg.sender) {
             if (_association.send(_amountRaised)){
-                emit FundTransfer(_association, _amountRaised, false);
+                FundTransfer(_association, _amountRaised, false);
             } else {
                 _fundingGoalReached = false;
             }
