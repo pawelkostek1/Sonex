@@ -112,7 +112,7 @@ contract SonexToken is owned, ERC20 {
     //uint256 public buyPrice;
 
     mapping (address => uint256) private _balanceOf;
-    mapping (address => mapping (address => uint256)) private allowance;
+    mapping (address => mapping (address => uint256)) private _allowance;
 
     /**
      * @dev Constructor function - sets up basic parameters.
@@ -172,7 +172,7 @@ contract SonexToken is owned, ERC20 {
      * @dev Getter function - returns token allowance of a particular address
      */
     function allowanceOf(address _addr) public view returns (uint256){
-        return _balanceOf[msg.sender][_addr];
+        return _allowance[msg.sender][_addr];
     }
     /**
      * @dev mintToken function - implements the functionality to mint new tokens.
@@ -268,8 +268,8 @@ contract SonexToken is owned, ERC20 {
      * @param _value -
      */
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool success) {
-        require(_value <= allowance[_from][msg.sender]);
-        allowance[_from][msg.sender] =  allowance[_from][msg.sender].sub(_value);
+        require(_value <= _allowance[_from][msg.sender]);
+        _allowance[_from][msg.sender] =  _allowance[_from][msg.sender].sub(_value);
          emit Transfer(msg.sender, _to, _value);
          if(_isContract(_to)){
              ERC20ReceivingContract _contract  = ERC20ReceivingContract(_to);
@@ -308,7 +308,7 @@ contract SonexToken is owned, ERC20 {
      */
     function approve(address _spender, uint256 _value) external returns (bool success) {
         emit Approve(msg.sender, _spender, _value);
-        allowance[msg.sender][_spender] = _value;
+        _allowance[msg.sender][_spender] = _value;
         return true;
     }
 
@@ -321,7 +321,7 @@ contract SonexToken is owned, ERC20 {
     function approveAndCall(address _spender, uint256 _value, bytes _extraData) external returns (bool success) {
         emit Approve(msg.sender, _spender, _value);
         tokenRecipient spender = tokenRecipient(_spender);
-        allowance[msg.sender][_spender] = _value;
+        _allowance[msg.sender][_spender] = _value;
         spender.receiveApproval(msg.sender, _value, this, _extraData);
         return true;
     }

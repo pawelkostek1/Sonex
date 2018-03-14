@@ -85,7 +85,7 @@ contract SonexICO is owned, ERC223ReceivingContract {
     uint256 private _deadline;
     uint256 private _deadlinePrivateICO;
     uint256 private _durationPrivateICO;
-    uint256 private _minimumInvestmentInPrivateICO
+    uint256 private _minimumInvestmentInPrivateICO;
     uint256 private _limit;
     uint256 private _minimumInvestment;
     uint256 private _price;
@@ -123,7 +123,7 @@ contract SonexICO is owned, ERC223ReceivingContract {
      * @param durationInMinutes -
      * @param etherCostOfEachCoin -
      * @param addressCoins -
-     * @param shareLimit -
+     * @param coinLimit -
      */
     function SonexICO (
         address ifSuccessfulSendTo,
@@ -174,16 +174,16 @@ contract SonexICO is owned, ERC223ReceivingContract {
     }
 
     /**
-     * @dev Buy function - allows transaction sender to purchase shares.
+     * @dev Buy convinience function - allows transaction sender to purchase shares.
      */
-    function _buy(address _addr, uint256 _value, uint256 amount) payable internal {//do we have to make it payable??
+    function _buy(address _addr, uint256 _value, uint256 amount) internal {//do we have to make it payable??
       require(_value >= _minimumInvestmentInPrivateICO);
       _balanceOf[_addr] = _balanceOf[_addr].add(_value);
       _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
       _coinBalance = _coinBalance.sub(amount);
       _amountRaised = _amountRaised.add(_value);
-      emit FundTransfer(_addr, _value, true);
-      _tokenCoins.transfer(_addr, amount;
+      FundTransfer(_addr, _value, true);
+      _tokenCoins.transfer(_addr, amount);
     }
 
     /**
@@ -196,7 +196,7 @@ contract SonexICO is owned, ERC223ReceivingContract {
     /**
      * @dev BuyFor function - allows transaction sender to purchase shares on behalf of other person.
      *
-     * @param _addr -
+     * @param _addr - address of the person for whom the tokens are purchased
      */
     function buyFor(address _addr) availableCoin(msg.value) withinLimit(_addr, msg.value) payable public {
         uint256 amount = msg.value.div(_price);
@@ -213,14 +213,14 @@ contract SonexICO is owned, ERC223ReceivingContract {
     /**
      * @dev Token fallback function - registers all the shares to be sold in the Crowdsale. It can be executed only by the association.
      *
-     * @param _from -
+     * @param _from - received the transfer from
      * @param _value -
-     * @param _data -
+     * @param token -
      */
     function tokenFallback(address _from, uint256 _value, address token) external { //what to do with data
-        if(_supportsToken[token]) {
+        if(_supportsToken[token]){
         _coinBalance = _coinBalance.add(_value);
-        _data; // Inefficiency!!!
+        _from;
         }
     }
 
@@ -230,7 +230,7 @@ contract SonexICO is owned, ERC223ReceivingContract {
     function closeCrowdsale() afterDeadline onlyOwner public { //do we onlyOwner only to be able to call this function
         if (_amountRaised >= _fundingGoal){
             _fundingGoalReached = true;
-            emit GoalReached(_association, _amountRaised);
+            GoalReached(_association, _amountRaised);
         }
         _crowdsaleClosed = true;
     }
@@ -266,12 +266,12 @@ contract SonexICO is owned, ERC223ReceivingContract {
             uint256 amount = _balanceOf[msg.sender];
             _balanceOf[msg.sender] = 0;
             if(amount > 0){
-                emit FundTransfer(msg.sender, amount, false);
+                FundTransfer(msg.sender, amount, false);
                 msg.sender.transfer(amount);
             }
         }
         else if(_fundingGoalReached && _association == msg.sender) {
-            //emit FundTransfer(_association, _amountRaised, false); //This triggers a warning for some reason...
+            FundTransfer(_association, _amountRaised, false); //This triggers a warning for some reason...
             _association.transfer(_amountRaised);
         }
 
