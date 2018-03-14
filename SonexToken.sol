@@ -99,7 +99,7 @@ interface ERC20ReceivingContract {function tokenFallback(address _from, uint256 
 /**
  * @dev Implementation of the custom token - the Sonex shares (mostly based on reference implementation). Ownership of the Sonex Contract will be assigned to the association.
  */
-contract SonexToken is owned, ERC20, ERC223 {
+contract SonexToken is owned, ERC20 {
 
     using SafeMath for uint256;
 
@@ -236,7 +236,7 @@ contract SonexToken is owned, ERC20, ERC223 {
     function transfer(address _to, uint256 _value) external {
         emit Transfer(msg.sender, _to, _value);
         if(_isContract(_to)){
-            ERC223ReceivingContract _contract  = ERC223ReceivingContract(_to);
+            ERC20ReceivingContract _contract  = ERC20ReceivingContract(_to);
             _contract.tokenFallback(msg.sender, _value, this);
         }
         _transfer(msg.sender, _to, _value);
@@ -272,7 +272,7 @@ contract SonexToken is owned, ERC20, ERC223 {
         allowance[_from][msg.sender] =  allowance[_from][msg.sender].sub(_value);
          emit Transfer(msg.sender, _to, _value);
          if(_isContract(_to)){
-             ERC223ReceivingContract _contract  = ERC223ReceivingContract(_to);
+             ERC20ReceivingContract _contract  = ERC20ReceivingContract(_to);
              _contract.tokenFallback(msg.sender, _value, this);
          }
         _transfer(_from, _to, _value);
