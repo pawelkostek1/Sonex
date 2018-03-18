@@ -113,10 +113,13 @@ contract SonexIco is owned, ERC20ReceivingContract {
     bool _crowdsaleClosed = false;
 
     modifier afterDeadline() { require(now >= _deadline); _;}
+
+    modifier GoalReachedMod() {require(_crowdsaleClosed == true); _;}
+
     modifier availableCoin( uint256 _value) {
-        uint amount = _value.div(_price);
+        uint amount = _value.div(_price); //price 
         require(!_crowdsaleClosed);
-        require(_coinBalance.sub(amount) > 0);
+        require(_coinBalance.sub(amount) > 0); // ico contracts needs money in its account and shoudlent be closed
         _;
     }
     modifier withinLimit(address _addr, uint256 _value) {
@@ -214,6 +217,7 @@ contract SonexIco is owned, ERC20ReceivingContract {
      */
     function buyFor(address _addr) availableCoin(msg.value) withinLimit(_addr, msg.value) payable public {
         uint256 amount = msg.value.div(_price);
+        //amount = amount.mul(10 ** uint256(18));
 
         if(now <= _deadlinePrivateICO.sub(_durationPrivateICO.div(2))){//first week private ICO
           require(msg.value >= _minimumInvestmentInPrivateICO);
@@ -254,7 +258,7 @@ contract SonexIco is owned, ERC20ReceivingContract {
     /**
      * @dev Ether withdrawal function - in case of funding goal reached allows the association to Withdraw the funds. Alternativly, the right to Withdraw ether goes to contributors.
      */
-    function safeWithdrawal() afterDeadline public { //Must revise this part of the code!!!
+    function safeWithdrawal() afterDeadline GoalReachedMod public { //Must revise this part of the code!!!
         /*
         if (!_fundingGoalReached) {
             uint256 amount = _balanceOf[msg.sender];
