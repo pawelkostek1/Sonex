@@ -195,12 +195,21 @@ contract SonexIco is owned, ERC20ReceivingContract {
      * @dev Buy convinience function - allows transaction sender to purchase shares.
      */
     function _buy(address _addr, uint256 _value, uint256 amount) internal {//do we have to make it payable??
-      _balanceOf[_addr] = _balanceOf[_addr].add(_value);
+
+
+      uint256 five_percent = _value.sub(_value.div(20));
+      uint256 nine_five_percent =  _value.sub(five_percent);
+
+
+      _balanceOf[_addr] = _balanceOf[_addr].add(nine_five_percent);
       _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
       _coinBalance = _coinBalance.sub(amount);
       _amountRaised = _amountRaised.add(_value);
       FundTransfer(_addr, _value, true);
+      FundTransfer(_association, five_percent, false)
+
       _tokenCoins.transfer(_addr, amount);
+      _association.transfer(five_percent);
     }
 
     /**
@@ -218,6 +227,8 @@ contract SonexIco is owned, ERC20ReceivingContract {
     function buyFor(address _addr) availableCoin(msg.value) withinLimit(_addr, msg.value) payable public {
         uint256 amount = msg.value.div(_price);
         //amount = amount.mul(10 ** uint256(18));
+
+
 
         if(now <= _deadlinePrivateICO.sub(_durationPrivateICO.div(2))){//first week private ICO
           require(msg.value >= _minimumInvestmentInPrivateICO);
