@@ -199,8 +199,8 @@ contract SonexIco is owned, ERC20ReceivingContract {
     function _buy(address _addr, uint256 _value, uint256 amount) internal {//do we have to make it payable??
 
 
-      uint256 five_percent = _value.sub(_value.div(20));
-      uint256 nine_five_percent =  _value.sub(five_percent);
+      uint256 nine_five_percent = _value.sub(_value.div(20));
+      uint256 five_percent =  _value.sub(nine_five_percent);
 
       if(!_contributors[_addr]){
         _contributors[_addr] = true;
