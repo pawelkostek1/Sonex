@@ -206,7 +206,7 @@ contract SonexIco is owned, ERC20ReceivingContract {
       _coinBalance = _coinBalance.sub(amount);
       _amountRaised = _amountRaised.add(_value);
       FundTransfer(_addr, _value, true);
-      FundTransfer(_association, five_percent, false)
+      FundTransfer(_association, five_percent, false);
 
       _tokenCoins.transfer(_addr, amount);
       _association.transfer(five_percent);
@@ -308,3 +308,5 @@ contract SonexIco is owned, ERC20ReceivingContract {
 
     }
 }
+
+//transfear owenrtship test
