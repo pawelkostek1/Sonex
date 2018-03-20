@@ -104,20 +104,22 @@ contract SonexIco is owned, ERC20ReceivingContract {
     uint256 private _price;
     uint256 private _coinBalance;
     Token private _tokenCoins;
+    address[] _contributorsAddress;
 
     mapping (address => uint256) private _balanceOf;
     mapping (address => uint256) private _coinLimitOf;
     mapping (address => bool) private _supportsToken;
+    mapping (address => bool) private _contributors;
 
     bool _fundingGoalReached = false;
     bool _crowdsaleClosed = false;
 
     modifier afterDeadline() { require(now >= _deadline); _;}
 
-    modifier GoalReachedMod() {require(_crowdsaleClosed == true); _;}
+    modifier closedCrowdsale() {require(_crowdsaleClosed == true); _;}
 
     modifier availableCoin( uint256 _value) {
-        uint amount = _value.div(_price); //price 
+        uint amount = _value.div(_price); //price
         require(!_crowdsaleClosed);
         require(_coinBalance.sub(amount) > 0); // ico contracts needs money in its account and shoudlent be closed
         _;
@@ -200,7 +202,10 @@ contract SonexIco is owned, ERC20ReceivingContract {
       uint256 five_percent = _value.sub(_value.div(20));
       uint256 nine_five_percent =  _value.sub(five_percent);
 
-
+      if(!_contributors[_addr]){
+        _contributors[_addr] = true;
+        _contributorsAddress.push(_addr);
+      }
       _balanceOf[_addr] = _balanceOf[_addr].add(nine_five_percent);
       _coinLimitOf[_addr] = _coinLimitOf[_addr].add(amount);
       _coinBalance = _coinBalance.sub(amount);
@@ -269,7 +274,7 @@ contract SonexIco is owned, ERC20ReceivingContract {
     /**
      * @dev Ether withdrawal function - in case of funding goal reached allows the association to Withdraw the funds. Alternativly, the right to Withdraw ether goes to contributors.
      */
-    function safeWithdrawal() afterDeadline GoalReachedMod public { //Must revise this part of the code!!!
+    function safeWithdrawal() afterDeadline closedCrowdsale onlyOwner public { //Must revise this part of the code!!!
         /*
         if (!_fundingGoalReached) {
             uint256 amount = _balanceOf[msg.sender];
@@ -294,11 +299,13 @@ contract SonexIco is owned, ERC20ReceivingContract {
 
         //Alternative implmentation
         if (!_fundingGoalReached) {
-            uint256 amount = _balanceOf[msg.sender];
-            _balanceOf[msg.sender] = 0;
-            if(amount > 0){
-                FundTransfer(msg.sender, amount, false);
-                msg.sender.transfer(amount);
+            for(uint i=0; i< _contributorsAddress.length; i++){
+              uint256 amount = _balanceOf[_contributorsAddress[i]];
+              _balanceOf[_contributorsAddress[0]] = 0;
+              if(amount > 0){
+                  FundTransfer(_contributorsAddress[0], amount, false);
+                  _contributorsAddress[0].transfer(amount);
+              }
             }
         }
         else if(_fundingGoalReached && _association == msg.sender) {
@@ -308,5 +315,3 @@ contract SonexIco is owned, ERC20ReceivingContract {
 
     }
 }
-
-//transfear owenrtship test
