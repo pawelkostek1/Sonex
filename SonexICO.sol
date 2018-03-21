@@ -76,6 +76,8 @@ contract owned {
     function transferOwnership(address newOwner) onlyOwner public {
         owner = newOwner;
     }
+
+
 }
 
 /**
@@ -114,9 +116,9 @@ contract SonexIco is owned, ERC20ReceivingContract {
     bool _fundingGoalReached = false;
     bool _crowdsaleClosed = false;
 
-    modifier afterDeadline() { require(now >= _deadline); _;}
+    modifier afterDeadline() { if(now >= _deadline) _;}
 
-    modifier closedCrowdsale() {require(_crowdsaleClosed == true); _;}
+    modifier closedCrowdsale() {if(_crowdsaleClosed) _;}
 
     modifier availableCoin( uint256 _value) {
         uint amount = _value.div(_price); //price
@@ -179,12 +181,24 @@ contract SonexIco is owned, ERC20ReceivingContract {
         return _coinBalance;
     }
 
+
+    function crowdsaleClosed() public view returns (bool) {
+      return _crowdsaleClosed;
+    }
+
+    function fundingGoalReached() public view returns (bool) {
+      return _fundingGoalReached;
+    }
+
+
+
     /**
      * @dev Getter function - returns the price of coins left to be sold.
      */
-    function price() public view returns (uint256) {
+    function priceInWeiPerSmallestDenominationOfCoin() public view returns (uint256) {
         return _price;
     }
+    //lol
 
     /**
      * @dev Fallback function - usualy used to accept upcoming ether, however, in this case it reverts all transactions due to not sufficient gas.
@@ -301,16 +315,17 @@ contract SonexIco is owned, ERC20ReceivingContract {
         if (!_fundingGoalReached) {
             for(uint i=0; i< _contributorsAddress.length; i++){
               uint256 amount = _balanceOf[_contributorsAddress[i]];
-              _balanceOf[_contributorsAddress[0]] = 0;
+              _balanceOf[_contributorsAddress[i]] = 0;
               if(amount > 0){
-                  FundTransfer(_contributorsAddress[0], amount, false);
-                  _contributorsAddress[0].transfer(amount);
+                  FundTransfer(_contributorsAddress[i], amount, false);
+                  _contributorsAddress[i].transfer(amount);
               }
             }
         }
-        else if(_fundingGoalReached && _association == msg.sender) {
+        else {
+            require(_association == msg.sender);
             FundTransfer(_association, _amountRaised, false); //This triggers a warning for some reason...
-            _association.transfer(_amountRaised);
+            _association.transfer(this.balance);
         }
 
     }
